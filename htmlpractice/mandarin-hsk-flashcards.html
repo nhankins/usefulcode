@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HSK Flashcards</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f7f4ef;
+    --paper-dark: #ede9e1;
+    --vermilion: #c0392b;
+    --vermilion-light: #e74c3c;
+    --gold: #b8962e;
+    --muted: #7a7060;
+    --border: rgba(0,0,0,0.12);
+    --card-w: 480px;
+    --card-h: 320px;
+  }
+
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    padding: 2.5rem 2rem 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .site-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--paper);
+  }
+
+  .site-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.35rem;
+  }
+
+  .stats-row {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .stats-row span {
+    color: var(--paper);
+    font-weight: 500;
+  }
+
+  /* Level filter */
+  .level-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1.5rem 2rem 0;
+    width: 100%;
+    max-width: 860px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .level-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-right: 0.25rem;
+  }
+
+  .lvl-btn {
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    font-size: 0.78rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.04em;
+  }
+
+  .lvl-btn:hover { border-color: rgba(255,255,255,0.35); color: var(--paper); }
+
+  .lvl-btn.active {
+    background: var(--vermilion);
+    border-color: var(--vermilion);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* Search */
+  .search-row {
+    padding: 1rem 2rem 0;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .search-input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    color: var(--paper);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input::placeholder { color: rgba(255,255,255,0.3); }
+  .search-input:focus { border-color: rgba(255,255,255,0.3); }
+
+  /* Progress bar */
+  .progress-wrap {
+    width: 100%;
+    max-width: 860px;
+    padding: 1.25rem 2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--vermilion);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* Card stage */
+  .card-stage {
+    width: 100%;
+    max-width: 860px;
+    padding: 2rem 2rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+  }
+
+  .card-counter {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* Flip card */
+  .scene {
+    width: var(--card-w);
+    max-width: 100%;
+    height: var(--card-h);
+    perspective: 1000px;
+    perspective-origin: 50% 50%;
+    cursor: pointer;
+    position: relative;
+    z-index: 0;
+  }
+
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1), opacity 0.55s ease;
+  }
+
+  .card-front {
+    transform: rotateY(0deg);
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+  }
+
+  .card.flipped .card-front {
+    transform: rotateY(-180deg);
+  }
+
+  .card.flipped .card-back {
+    transform: rotateY(0deg);
+  }
+
+  .card-front {
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  /* Ink wash watermark on card front */
+  .card-front::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 70%, rgba(192,57,43,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 75% 25%, rgba(184,150,46,0.05) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .card-level-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--vermilion);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.2);
+  }
+
+  .hint-tap {
+    position: absolute;
+    bottom: 1rem;
+    font-size: 0.7rem;
+    color: rgba(0,0,0,0.25);
+    letter-spacing: 0.06em;
+  }
+
+  .hanzi-main {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 5.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pinyin-main {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-back {
+    background: #1a1916;
+    display: flex;
+    flex-direction: column;
+    padding: 1.75rem 2rem;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .card-back::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 20%, rgba(192,57,43,0.08) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .back-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .hanzi-back {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--paper);
+    line-height: 1;
+  }
+
+  .pinyin-back {
+    font-size: 1.1rem;
+    color: var(--vermilion-light);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+  }
+
+  .meaning-back {
+    font-size: 1.05rem;
+    color: rgba(247,244,239,0.75);
+    font-weight: 400;
+    border-left: 2px solid var(--vermilion);
+    padding-left: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .example-block {
+    margin-top: auto;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    position: relative;
+    z-index: 1;
+    --ex-scale: 1;
+  }
+
+  .ex-size-controls {
+    display: flex;
+    gap: 0.35rem;
+    align-self: flex-end;
+    margin-bottom: 0.25rem;
+  }
+
+  .ex-size-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px;
+    color: rgba(247,244,239,0.6);
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 7px;
+    transition: background 0.15s;
+  }
+
+  .ex-size-btn:first-child { font-size: 0.72rem; }
+  .ex-size-btn:last-child  { font-size: 0.95rem; }
+
+  .ex-size-btn:hover { background: rgba(255,255,255,0.14); color: var(--paper); }
+
+  .ex-hanzi {
+    font-family: 'Noto Serif SC', serif;
+    font-size: calc(1.05rem * var(--ex-scale));
+    color: var(--paper);
+    letter-spacing: 0.04em;
+    transition: font-size 0.2s;
+  }
+
+  .ex-pinyin {
+    font-size: calc(0.78rem * var(--ex-scale));
+    color: rgba(247,244,239,0.45);
+    letter-spacing: 0.04em;
+    transition: font-size 0.2s;
+  }
+
+  .ex-english {
+    font-size: calc(0.82rem * var(--ex-scale));
+    color: rgba(247,244,239,0.55);
+    font-style: italic;
+    transition: font-size 0.2s;
+  }
+
+  /* Nav controls */
+  .nav-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 0;
+  }
+
+  .nav-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--paper);
+    border-radius: 10px;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.88rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+  .nav-btn.primary {
+    background: var(--vermilion);
+    border-color: var(--vermilion);
+    font-weight: 500;
+  }
+
+  .nav-btn.primary:hover { background: var(--vermilion-light); border-color: var(--vermilion-light); }
+
+  /* Know / Don't know buttons */
+  .grade-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .grade-btn {
+    flex: 1;
+    padding: 0.65rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .grade-btn.no {
+    background: transparent;
+    border-color: rgba(192,57,43,0.4);
+    color: #e07070;
+  }
+
+  .grade-btn.no:hover { background: rgba(192,57,43,0.12); }
+
+  .grade-btn.yes {
+    background: transparent;
+    border-color: rgba(39,174,96,0.4);
+    color: #6dcc94;
+  }
+
+  .grade-btn.yes:hover { background: rgba(39,174,96,0.1); }
+
+  /* Deck list */
+  .deck-section {
+    width: 100%;
+    max-width: 860px;
+    padding: 2.5rem 2rem;
+    position: relative;
+    z-index: 0;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .toggle-grid-visibility {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+    transition: color 0.15s;
+  }
+
+  .toggle-grid-visibility:hover { color: var(--paper); }
+
+  .card-grid.hidden,
+  #noResults.hidden { display: none !important; }
+
+  .toggle-grid-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .toggle-grid-btn:hover { color: var(--paper); }
+
+  .toggle-grid-btn:hover { color: var(--paper); }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .mini-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    position: relative;
+  }
+
+  .mini-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.16);
+    transform: translateY(-1px);
+  }
+
+  .mini-card.known {
+    border-color: rgba(39,174,96,0.3);
+    background: rgba(39,174,96,0.05);
+  }
+
+  .mini-card.unknown {
+    border-color: rgba(192,57,43,0.3);
+    background: rgba(192,57,43,0.05);
+  }
+
+  .mini-hanzi {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--paper);
+    line-height: 1;
+  }
+
+  .mini-pinyin {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .mini-meaning {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mini-lvl {
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    font-size: 0.6rem;
+    color: var(--vermilion-light);
+    font-weight: 600;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 540px) {
+    :root { --card-w: 340px; --card-h: 280px; }
+    .hanzi-main { font-size: 4rem; }
+    header { flex-direction: column; align-items: flex-start; }
+    .site-title { font-size: 1.5rem; }
+    .card-back { padding: 1.25rem; }
+    .hanzi-back { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="site-title">汉字卡片</div>
+    <div class="site-subtitle">Mandarin HSK Vocabulary · Levels 1–6</div>
+  </div>
+  <div class="stats-row" id="statsRow">
+    <span id="statKnown">0</span> known &nbsp;·&nbsp; <span id="statLeft">0</span> to review<br>
+    <span id="statTotal">0</span> cards total
+  </div>
+</header>
+
+<div class="level-bar">
+  <span class="level-label">Level</span>
+  <button class="lvl-btn active" data-level="0">All</button>
+  <button class="lvl-btn" data-level="1">HSK 1</button>
+  <button class="lvl-btn" data-level="2">HSK 2</button>
+  <button class="lvl-btn" data-level="3">HSK 3</button>
+  <button class="lvl-btn" data-level="4">HSK 4</button>
+  <button class="lvl-btn" data-level="5">HSK 5</button>
+  <button class="lvl-btn" data-level="6">HSK 6</button>
+</div>
+
+<div class="search-row">
+  <input class="search-input" type="text" id="searchInput" placeholder="Search hanzi, pinyin, or meaning…" autocomplete="off">
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-label" id="progressLabel">0 / 0</div>
+</div>
+
+<div class="card-stage">
+  <div class="card-counter" id="cardCounter">Card 0 of 0</div>
+
+  <div class="scene" id="scene" onclick="flipCard()">
+    <div class="card" id="theCard">
+      <div class="card-face card-front" id="cardFront">
+        <div class="card-level-badge" id="frontBadge">—</div>
+        <div class="hanzi-main" id="frontHanzi">—</div>
+        <div class="pinyin-main" id="frontPinyin">—</div>
+        <div class="hint-tap">tap to reveal</div>
+      </div>
+      <div class="card-face card-back" id="cardBack">
+        <div class="back-header">
+          <div class="hanzi-back" id="backHanzi">—</div>
+          <div class="pinyin-back" id="backPinyin">—</div>
+        </div>
+        <div class="meaning-back" id="backMeaning">—</div>
+        <div class="example-block" id="exampleBlock">
+          <div class="ex-size-controls">
+            <button class="ex-size-btn" onclick="changeExSize(-1);event.stopPropagation();" title="Smaller">A−</button>
+            <button class="ex-size-btn" onclick="changeExSize(1);event.stopPropagation();"  title="Larger">A+</button>
+          </div>
+          <div class="ex-hanzi" id="exHanzi">—</div>
+          <div class="ex-pinyin" id="exPinyin">—</div>
+          <div class="ex-english" id="exEn">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grade-buttons" id="gradeButtons" style="visibility:hidden; width: var(--card-w); max-width:100%;">
+    <button class="grade-btn no" onclick="gradeCard(false)">✕ &nbsp;Still learning</button>
+    <button class="grade-btn yes" onclick="gradeCard(true)">✓ &nbsp;Got it</button>
+  </div>
+
+  <div class="nav-controls">
+    <button class="nav-btn" id="btnPrev" onclick="prevCard()">← Prev</button>
+    <button class="nav-btn" id="btnShuffle" onclick="shuffleDeck()">Shuffle</button>
+    <button class="nav-btn" id="btnReset" onclick="resetProgress()">Reset</button>
+    <button class="nav-btn" id="btnNext" onclick="nextCard()">Next →</button>
+  </div>
+</div>
+
+<div class="deck-section">
+  <div class="section-head">
+    <button class="section-title toggle-grid-visibility" onclick="toggleGridVisibility()" id="gridToggleBtn">All cards ▾</button>
+    <button class="toggle-grid-btn" onclick="toggleSort()">Sort: <span id="sortLabel">level</span></button>
+  </div>
+  <div class="card-grid" id="cardGrid"></div>
+  <div class="no-results" id="noResults" style="display:none">No cards match.</div>
+</div>
+
+<script>
+const VOCAB = [
+// HSK 1
+{level:1,hanzi:"我",pinyin:"wǒ",meaning:"I; me",ex:"我是学生。",exPinyin:"Wǒ shì xuésheng.",exEn:"I am a student."},
+{level:1,hanzi:"你",pinyin:"nǐ",meaning:"you",ex:"你叫什么名字？",exPinyin:"Nǐ jiào shénme míngzi?",exEn:"What's your name?"},
+{level:1,hanzi:"好",pinyin:"hǎo",meaning:"good",ex:"今天天气很好。",exPinyin:"Jīntiān tiānqì hěn hǎo.",exEn:"The weather is nice today."},
+{level:1,hanzi:"是",pinyin:"shì",meaning:"to be",ex:"这是我的书。",exPinyin:"Zhè shì wǒ de shū.",exEn:"This is my book."},
+{level:1,hanzi:"不",pinyin:"bù",meaning:"not; no",ex:"我不喜欢咖啡。",exPinyin:"Wǒ bù xǐhuan kāfēi.",exEn:"I don't like coffee."},
+{level:1,hanzi:"吃",pinyin:"chī",meaning:"to eat",ex:"我们去吃饭吧。",exPinyin:"Wǒmen qù chīfàn ba.",exEn:"Let's go eat."},
+{level:1,hanzi:"喝",pinyin:"hē",meaning:"to drink",ex:"你想喝什么？",exPinyin:"Nǐ xiǎng hē shénme?",exEn:"What do you want to drink?"},
+{level:1,hanzi:"水",pinyin:"shuǐ",meaning:"water",ex:"请给我一杯水。",exPinyin:"Qǐng gěi wǒ yì bēi shuǐ.",exEn:"Please give me a glass of water."},
+{level:1,hanzi:"大",pinyin:"dà",meaning:"big",ex:"这个房间很大。",exPinyin:"Zhège fángjiān hěn dà.",exEn:"This room is big."},
+{level:1,hanzi:"小",pinyin:"xiǎo",meaning:"small",ex:"她有一只小狗。",exPinyin:"Tā yǒu yì zhī xiǎo gǒu.",exEn:"She has a small dog."},
+{level:1,hanzi:"爱",pinyin:"ài",meaning:"to love",ex:"我爱我的家人。",exPinyin:"Wǒ ài wǒ de jiārén.",exEn:"I love my family."},
+{level:1,hanzi:"看",pinyin:"kàn",meaning:"to look; watch",ex:"我喜欢看电影。",exPinyin:"Wǒ xǐhuan kàn diànyǐng.",exEn:"I like watching movies."},
+{level:1,hanzi:"去",pinyin:"qù",meaning:"to go",ex:"你想去哪儿？",exPinyin:"Nǐ xiǎng qù nǎr?",exEn:"Where do you want to go?"},
+{level:1,hanzi:"来",pinyin:"lái",meaning:"to come",ex:"明天你能来吗？",exPinyin:"Míngtiān nǐ néng lái ma?",exEn:"Can you come tomorrow?"},
+{level:1,hanzi:"有",pinyin:"yǒu",meaning:"to have",ex:"我有两个朋友。",exPinyin:"Wǒ yǒu liǎng gè péngyou.",exEn:"I have two friends."},
+{level:1,hanzi:"没",pinyin:"méi",meaning:"not have",ex:"我没有钱。",exPinyin:"Wǒ méiyǒu qián.",exEn:"I don't have money."},
+{level:1,hanzi:"多",pinyin:"duō",meaning:"many; much",ex:"这里有很多人。",exPinyin:"Zhèlǐ yǒu hěn duō rén.",exEn:"There are many people here."},
+{level:1,hanzi:"少",pinyin:"shǎo",meaning:"few; little",ex:"今天的作业很少。",exPinyin:"Jīntiān de zuòyè hěn shǎo.",exEn:"Today's homework is little."},
+{level:1,hanzi:"天",pinyin:"tiān",meaning:"day; sky",ex:"我每天都学习。",exPinyin:"Wǒ měitiān dōu xuéxí.",exEn:"I study every day."},
+{level:1,hanzi:"中国",pinyin:"Zhōngguó",meaning:"China",ex:"他来自中国。",exPinyin:"Tā láizì Zhōngguó.",exEn:"He's from China."},
+{level:1,hanzi:"老师",pinyin:"lǎoshī",meaning:"teacher",ex:"我的老师很好。",exPinyin:"Wǒ de lǎoshī hěn hǎo.",exEn:"My teacher is very good."},
+{level:1,hanzi:"学生",pinyin:"xuésheng",meaning:"student",ex:"他是大学生。",exPinyin:"Tā shì dàxuéshēng.",exEn:"He is a university student."},
+{level:1,hanzi:"朋友",pinyin:"péngyou",meaning:"friend",ex:"她是我的好朋友。",exPinyin:"Tā shì wǒ de hǎo péngyou.",exEn:"She is my good friend."},
+{level:1,hanzi:"喜欢",pinyin:"xǐhuan",meaning:"to like",ex:"我喜欢吃水果。",exPinyin:"Wǒ xǐhuan chī shuǐguǒ.",exEn:"I like eating fruit."},
+{level:1,hanzi:"漂亮",pinyin:"piàoliang",meaning:"pretty",ex:"这件衣服很漂亮。",exPinyin:"Zhè jiàn yīfu hěn piàoliang.",exEn:"This piece of clothing is pretty."},
+{level:1,hanzi:"现在",pinyin:"xiànzài",meaning:"now",ex:"我现在很忙。",exPinyin:"Wǒ xiànzài hěn máng.",exEn:"I'm busy right now."},
+{level:1,hanzi:"今天",pinyin:"jīntiān",meaning:"today",ex:"今天是星期一。",exPinyin:"Jīntiān shì xīngqīyī.",exEn:"Today is Monday."},
+{level:1,hanzi:"吗",pinyin:"ma",meaning:"question particle",ex:"你是中国人吗？",exPinyin:"Nǐ shì Zhōngguó rén ma?",exEn:"Are you Chinese?"},
+{level:1,hanzi:"什么",pinyin:"shénme",meaning:"what",ex:"你在做什么？",exPinyin:"Nǐ zài zuò shénme?",exEn:"What are you doing?"},
+{level:1,hanzi:"谢谢",pinyin:"xièxie",meaning:"thank you",ex:"谢谢你的帮助。",exPinyin:"Xièxie nǐ de bāngzhù.",exEn:"Thanks for your help."},
+// HSK 2
+{level:2,hanzi:"高兴",pinyin:"gāoxìng",meaning:"happy",ex:"认识你很高兴。",exPinyin:"Rènshi nǐ hěn gāoxìng.",exEn:"Nice to meet you."},
+{level:2,hanzi:"开始",pinyin:"kāishǐ",meaning:"to begin",ex:"电影几点开始？",exPinyin:"Diànyǐng jǐ diǎn kāishǐ?",exEn:"What time does the movie start?"},
+{level:2,hanzi:"完",pinyin:"wán",meaning:"to finish",ex:"我写完作业了。",exPinyin:"Wǒ xiěwán zuòyè le.",exEn:"I finished my homework."},
+{level:2,hanzi:"觉得",pinyin:"juéde",meaning:"to feel; think",ex:"我觉得这个主意不错。",exPinyin:"Wǒ juéde zhège zhǔyi búcuò.",exEn:"I think this idea is pretty good."},
+{level:2,hanzi:"知道",pinyin:"zhīdào",meaning:"to know",ex:"我不知道答案。",exPinyin:"Wǒ bù zhīdào dá'àn.",exEn:"I don't know the answer."},
+{level:2,hanzi:"认识",pinyin:"rènshi",meaning:"to know (a person)",ex:"我们在大学认识的。",exPinyin:"Wǒmen zài dàxué rènshi de.",exEn:"We met in college."},
+{level:2,hanzi:"问题",pinyin:"wèntí",meaning:"problem; question",ex:"这不是问题。",exPinyin:"Zhè bú shì wèntí.",exEn:"This isn't a problem."},
+{level:2,hanzi:"工作",pinyin:"gōngzuò",meaning:"work; job",ex:"我的工作很有意思。",exPinyin:"Wǒ de gōngzuò hěn yǒuyìsi.",exEn:"My job is interesting."},
+{level:2,hanzi:"身体",pinyin:"shēntǐ",meaning:"body; health",ex:"多运动对身体好。",exPinyin:"Duō yùndòng duì shēntǐ hǎo.",exEn:"Exercise is good for your health."},
+{level:2,hanzi:"运动",pinyin:"yùndòng",meaning:"to exercise; sports",ex:"他每天早上运动。",exPinyin:"Tā měitiān zǎoshang yùndòng.",exEn:"He exercises every morning."},
+{level:2,hanzi:"季节",pinyin:"jìjié",meaning:"season",ex:"春天是我最喜欢的季节。",exPinyin:"Chūntiān shì wǒ zuì xǐhuan de jìjié.",exEn:"Spring is my favorite season."},
+{level:2,hanzi:"天气",pinyin:"tiānqì",meaning:"weather",ex:"明天天气怎么样？",exPinyin:"Míngtiān tiānqì zěnmeyàng?",exEn:"How's the weather tomorrow?"},
+{level:2,hanzi:"已经",pinyin:"yǐjīng",meaning:"already",ex:"他已经走了。",exPinyin:"Tā yǐjīng zǒu le.",exEn:"He has already left."},
+{level:2,hanzi:"准备",pinyin:"zhǔnbèi",meaning:"to prepare",ex:"我在准备考试。",exPinyin:"Wǒ zài zhǔnbèi kǎoshì.",exEn:"I'm preparing for an exam."},
+{level:2,hanzi:"但是",pinyin:"dànshì",meaning:"but",ex:"我想去，但是没有时间。",exPinyin:"Wǒ xiǎng qù, dànshì méiyǒu shíjiān.",exEn:"I want to go, but I don't have time."},
+{level:2,hanzi:"因为",pinyin:"yīnwèi",meaning:"because",ex:"我没去是因为下雨了。",exPinyin:"Wǒ méi qù shì yīnwèi xiàyǔ le.",exEn:"I didn't go because it rained."},
+{level:2,hanzi:"所以",pinyin:"suǒyǐ",meaning:"so; therefore",ex:"今天很累，所以我早点睡。",exPinyin:"Jīntiān hěn lèi, suǒyǐ wǒ zǎodiǎn shuì.",exEn:"I'm tired today, so I'll sleep early."},
+{level:2,hanzi:"如果",pinyin:"rúguǒ",meaning:"if",ex:"如果下雨，我们就不去了。",exPinyin:"Rúguǒ xiàyǔ, wǒmen jiù bú qù le.",exEn:"If it rains, we won't go."},
+{level:2,hanzi:"教室",pinyin:"jiàoshì",meaning:"classroom",ex:"老师在教室里。",exPinyin:"Lǎoshī zài jiàoshì lǐ.",exEn:"The teacher is in the classroom."},
+{level:2,hanzi:"机场",pinyin:"jīchǎng",meaning:"airport",ex:"我们在机场见面。",exPinyin:"Wǒmen zài jīchǎng jiànmiàn.",exEn:"Let's meet at the airport."},
+{level:2,hanzi:"便宜",pinyin:"piányi",meaning:"cheap",ex:"这件衣服很便宜。",exPinyin:"Zhè jiàn yīfu hěn piányi.",exEn:"This piece of clothing is cheap."},
+{level:2,hanzi:"贵",pinyin:"guì",meaning:"expensive",ex:"这个手机太贵了。",exPinyin:"Zhège shǒujī tài guì le.",exEn:"This phone is too expensive."},
+{level:2,hanzi:"快",pinyin:"kuài",meaning:"fast",ex:"他跑得很快。",exPinyin:"Tā pǎo de hěn kuài.",exEn:"He runs fast."},
+{level:2,hanzi:"慢",pinyin:"màn",meaning:"slow",ex:"请说慢一点。",exPinyin:"Qǐng shuō màn yìdiǎn.",exEn:"Please speak a bit slower."},
+{level:2,hanzi:"声音",pinyin:"shēngyīn",meaning:"sound; voice",ex:"她的声音很好听。",exPinyin:"Tā de shēngyīn hěn hǎotīng.",exEn:"Her voice sounds great."},
+{level:2,hanzi:"游泳",pinyin:"yóuyǒng",meaning:"to swim",ex:"夏天我喜欢游泳。",exPinyin:"Xiàtiān wǒ xǐhuan yóuyǒng.",exEn:"I like swimming in summer."},
+{level:2,hanzi:"打电话",pinyin:"dǎ diànhuà",meaning:"to phone someone",ex:"我给妈妈打电话。",exPinyin:"Wǒ gěi māma dǎ diànhuà.",exEn:"I'm calling my mom."},
+{level:2,hanzi:"为什么",pinyin:"wèishénme",meaning:"why",ex:"你为什么不吃饭？",exPinyin:"Nǐ wèishénme bù chīfàn?",exEn:"Why aren't you eating?"},
+{level:2,hanzi:"怎么",pinyin:"zěnme",meaning:"how",ex:"这个字怎么写？",exPinyin:"Zhège zì zěnme xiě?",exEn:"How do you write this character?"},
+{level:2,hanzi:"时候",pinyin:"shíhou",meaning:"time; moment",ex:"你什么时候回来？",exPinyin:"Nǐ shénme shíhou huílái?",exEn:"When are you coming back?"},
+{level:2,hanzi:"能",pinyin:"néng",meaning:"can; be able to",ex:"你能帮我吗？",exPinyin:"Nǐ néng bāng wǒ ma?",exEn:"Can you help me?"},
+// HSK 3
+{level:3,hanzi:"环境",pinyin:"huánjìng",meaning:"environment",ex:"这里的环境很安静。",exPinyin:"Zhèlǐ de huánjìng hěn ānjìng.",exEn:"The environment here is quiet."},
+{level:3,hanzi:"经验",pinyin:"jīngyàn",meaning:"experience",ex:"他在这方面有很多经验。",exPinyin:"Tā zài zhè fāngmiàn yǒu hěn duō jīngyàn.",exEn:"He has a lot of experience in this area."},
+{level:3,hanzi:"机会",pinyin:"jīhuì",meaning:"opportunity",ex:"这是一个好机会。",exPinyin:"Zhè shì yí gè hǎo jīhuì.",exEn:"This is a good opportunity."},
+{level:3,hanzi:"决定",pinyin:"juédìng",meaning:"to decide",ex:"我决定明天出发。",exPinyin:"Wǒ juédìng míngtiān chūfā.",exEn:"I've decided to leave tomorrow."},
+{level:3,hanzi:"解决",pinyin:"jiějué",meaning:"to solve",ex:"这个问题不难解决。",exPinyin:"Zhège wèntí bù nán jiějué.",exEn:"This problem isn't hard to solve."},
+{level:3,hanzi:"参加",pinyin:"cānjiā",meaning:"to join; attend",ex:"我想参加这个活动。",exPinyin:"Wǒ xiǎng cānjiā zhège huódòng.",exEn:"I want to join this event."},
+{level:3,hanzi:"健康",pinyin:"jiànkāng",meaning:"healthy; health",ex:"早睡早起对健康好。",exPinyin:"Zǎo shuì zǎo qǐ duì jiànkāng hǎo.",exEn:"Sleeping and rising early is good for health."},
+{level:3,hanzi:"努力",pinyin:"nǔlì",meaning:"to work hard",ex:"她非常努力地学习。",exPinyin:"Tā fēicháng nǔlì de xuéxí.",exEn:"She studies very hard."},
+{level:3,hanzi:"聪明",pinyin:"cōngming",meaning:"clever; smart",ex:"这个孩子很聪明。",exPinyin:"Zhège háizi hěn cōngming.",exEn:"This child is very smart."},
+{level:3,hanzi:"方便",pinyin:"fāngbiàn",meaning:"convenient",ex:"坐地铁很方便。",exPinyin:"Zuò dìtiě hěn fāngbiàn.",exEn:"Taking the subway is very convenient."},
+{level:3,hanzi:"当然",pinyin:"dāngrán",meaning:"of course",ex:"当然可以，没问题。",exPinyin:"Dāngrán kěyǐ, méi wèntí.",exEn:"Of course, no problem."},
+{level:3,hanzi:"一定",pinyin:"yīdìng",meaning:"certainly; must",ex:"你一定要试一试。",exPinyin:"Nǐ yīdìng yào shì yi shì.",exEn:"You should definitely give it a try."},
+{level:3,hanzi:"其实",pinyin:"qíshí",meaning:"actually; in fact",ex:"其实我不太喜欢辣的。",exPinyin:"Qíshí wǒ bú tài xǐhuan là de.",exEn:"Actually, I don't really like spicy food."},
+{level:3,hanzi:"继续",pinyin:"jìxù",meaning:"to continue",ex:"请继续说。",exPinyin:"Qǐng jìxù shuō.",exEn:"Please continue."},
+{level:3,hanzi:"打算",pinyin:"dǎsuàn",meaning:"to plan to",ex:"你打算去哪儿度假？",exPinyin:"Nǐ dǎsuàn qù nǎr dùjià?",exEn:"Where do you plan to vacation?"},
+{level:3,hanzi:"同意",pinyin:"tóngyì",meaning:"to agree",ex:"我同意你的意见。",exPinyin:"Wǒ tóngyì nǐ de yìjiàn.",exEn:"I agree with your opinion."},
+{level:3,hanzi:"变化",pinyin:"biànhuà",meaning:"change",ex:"这里变化很大。",exPinyin:"Zhèlǐ biànhuà hěn dà.",exEn:"There have been big changes here."},
+{level:3,hanzi:"关系",pinyin:"guānxi",meaning:"relationship; connection",ex:"我们的关系很好。",exPinyin:"Wǒmen de guānxi hěn hǎo.",exEn:"We have a good relationship."},
+{level:3,hanzi:"影响",pinyin:"yǐngxiǎng",meaning:"to affect; influence",ex:"天气影响了我们的计划。",exPinyin:"Tiānqì yǐngxiǎngle wǒmen de jìhuà.",exEn:"The weather affected our plans."},
+{level:3,hanzi:"提高",pinyin:"tígāo",meaning:"to improve; raise",ex:"我想提高我的汉语水平。",exPinyin:"Wǒ xiǎng tígāo wǒ de Hànyǔ shuǐpíng.",exEn:"I want to improve my Chinese level."},
+{level:3,hanzi:"发展",pinyin:"fāzhǎn",meaning:"to develop",ex:"这个城市发展很快。",exPinyin:"Zhège chéngshì fāzhǎn hěn kuài.",exEn:"This city is developing quickly."},
+{level:3,hanzi:"比较",pinyin:"bǐjiào",meaning:"relatively; to compare",ex:"这个比较便宜。",exPinyin:"Zhège bǐjiào piányi.",exEn:"This one is relatively cheap."},
+{level:3,hanzi:"非常",pinyin:"fēicháng",meaning:"very; extremely",ex:"今天非常热。",exPinyin:"Jīntiān fēicháng rè.",exEn:"It's extremely hot today."},
+{level:3,hanzi:"习惯",pinyin:"xíguàn",meaning:"habit; to be used to",ex:"我已经习惯了这里的生活。",exPinyin:"Wǒ yǐjīng xíguànle zhèlǐ de shēnghuó.",exEn:"I'm already used to life here."},
+{level:3,hanzi:"感觉",pinyin:"gǎnjué",meaning:"feeling; to feel",ex:"我感觉有点累。",exPinyin:"Wǒ gǎnjué yǒudiǎn lèi.",exEn:"I feel a bit tired."},
+{level:3,hanzi:"结果",pinyin:"jiéguǒ",meaning:"result; outcome",ex:"考试结果出来了吗？",exPinyin:"Kǎoshì jiéguǒ chūlái le ma?",exEn:"Have the exam results come out?"},
+{level:3,hanzi:"选择",pinyin:"xuǎnzé",meaning:"to choose; choice",ex:"你可以自己选择。",exPinyin:"Nǐ kěyǐ zìjǐ xuǎnzé.",exEn:"You can choose for yourself."},
+{level:3,hanzi:"成功",pinyin:"chénggōng",meaning:"to succeed; success",ex:"希望你成功！",exPinyin:"Xīwàng nǐ chénggōng!",exEn:"Hope you succeed!"},
+{level:3,hanzi:"重要",pinyin:"zhòngyào",meaning:"important",ex:"健康是最重要的。",exPinyin:"Jiànkāng shì zuì zhòngyào de.",exEn:"Health is the most important thing."},
+{level:3,hanzi:"满意",pinyin:"mǎnyì",meaning:"satisfied",ex:"我对这个结果很满意。",exPinyin:"Wǒ duì zhège jiéguǒ hěn mǎnyì.",exEn:"I'm very satisfied with this result."},
+// HSK 4
+{level:4,hanzi:"尽管",pinyin:"jǐnguǎn",meaning:"although; despite",ex:"尽管很累，他还是坚持工作。",exPinyin:"Jǐnguǎn hěn lèi, tā háishi jiānchí gōngzuò.",exEn:"Although tired, he kept working."},
+{level:4,hanzi:"坚持",pinyin:"jiānchí",meaning:"to persist; insist",ex:"你要坚持每天练习。",exPinyin:"Nǐ yào jiānchí měitiān liànxí.",exEn:"You should persist in practising every day."},
+{level:4,hanzi:"态度",pinyin:"tàidu",meaning:"attitude",ex:"他对工作的态度很认真。",exPinyin:"Tā duì gōngzuò de tàidu hěn rènzhēn.",exEn:"He has a serious attitude towards work."},
+{level:4,hanzi:"观点",pinyin:"guāndiǎn",meaning:"viewpoint; perspective",ex:"我赞同你的观点。",exPinyin:"Wǒ zàntóng nǐ de guāndiǎn.",exEn:"I agree with your viewpoint."},
+{level:4,hanzi:"理解",pinyin:"lǐjiě",meaning:"to understand",ex:"请你理解我的感受。",exPinyin:"Qǐng nǐ lǐjiě wǒ de gǎnshòu.",exEn:"Please understand my feelings."},
+{level:4,hanzi:"联系",pinyin:"liánxì",meaning:"to contact; connection",ex:"有事随时联系我。",exPinyin:"Yǒu shì suíshí liánxì wǒ.",exEn:"Contact me anytime if you need anything."},
+{level:4,hanzi:"负责",pinyin:"fùzé",meaning:"responsible; in charge",ex:"他负责这个项目。",exPinyin:"Tā fùzé zhège xiàngmù.",exEn:"He's in charge of this project."},
+{level:4,hanzi:"竞争",pinyin:"jìngzhēng",meaning:"to compete; competition",ex:"市场竞争越来越激烈。",exPinyin:"Shìchǎng jìngzhēng yuèláiyuè jīliè.",exEn:"Market competition is getting fiercer."},
+{level:4,hanzi:"提供",pinyin:"tígōng",meaning:"to provide",ex:"公司提供免费午餐。",exPinyin:"Gōngsī tígōng miǎnfèi wǔcān.",exEn:"The company provides free lunch."},
+{level:4,hanzi:"考虑",pinyin:"kǎolǜ",meaning:"to consider",ex:"我需要考虑一下。",exPinyin:"Wǒ xūyào kǎolǜ yīxià.",exEn:"I need to think about it."},
+{level:4,hanzi:"吸引",pinyin:"xīyǐn",meaning:"to attract",ex:"这部电影很吸引人。",exPinyin:"Zhè bù diànyǐng hěn xīyǐn rén.",exEn:"This film is very attractive."},
+{level:4,hanzi:"表达",pinyin:"biǎodá",meaning:"to express",ex:"他不善于表达自己。",exPinyin:"Tā bù shànyú biǎodá zìjǐ.",exEn:"He's not good at expressing himself."},
+{level:4,hanzi:"保护",pinyin:"bǎohù",meaning:"to protect",ex:"我们要保护环境。",exPinyin:"Wǒmen yào bǎohù huánjìng.",exEn:"We must protect the environment."},
+{level:4,hanzi:"促进",pinyin:"cùjìn",meaning:"to promote; boost",ex:"这有助于促进合作。",exPinyin:"Zhè yǒuzhù yú cùjìn hézuò.",exEn:"This helps to promote cooperation."},
+{level:4,hanzi:"质量",pinyin:"zhìliàng",meaning:"quality",ex:"这个产品质量很好。",exPinyin:"Zhège chǎnpǐn zhìliàng hěn hǎo.",exEn:"This product is of good quality."},
+{level:4,hanzi:"效率",pinyin:"xiàolǜ",meaning:"efficiency",ex:"提高工作效率很重要。",exPinyin:"Tígāo gōngzuò xiàolǜ hěn zhòngyào.",exEn:"Improving work efficiency is important."},
+{level:4,hanzi:"损失",pinyin:"sǔnshī",meaning:"loss; damage",ex:"这次失误造成了很大损失。",exPinyin:"Zhè cì shīwù zàochéngle hěn dà sǔnshī.",exEn:"This mistake caused a big loss."},
+{level:4,hanzi:"压力",pinyin:"yālì",meaning:"pressure; stress",ex:"最近工作压力很大。",exPinyin:"Zuìjìn gōngzuò yālì hěn dà.",exEn:"Work pressure has been high recently."},
+{level:4,hanzi:"幸福",pinyin:"xìngfú",meaning:"happiness; happy",ex:"和家人在一起让我感到幸福。",exPinyin:"Hé jiārén zài yīqǐ ràng wǒ gǎndào xìngfú.",exEn:"Being with family makes me feel happy."},
+{level:4,hanzi:"遗憾",pinyin:"yíhàn",meaning:"regret; pity",ex:"很遗憾你不能来。",exPinyin:"Hěn yíhàn nǐ bù néng lái.",exEn:"It's a pity you can't come."},
+{level:4,hanzi:"借口",pinyin:"jièkǒu",meaning:"excuse",ex:"不要找借口了。",exPinyin:"Bùyào zhǎo jièkǒu le.",exEn:"Stop making excuses."},
+{level:4,hanzi:"逐渐",pinyin:"zhújiàn",meaning:"gradually",ex:"他的汉语逐渐进步了。",exPinyin:"Tā de Hànyǔ zhújiàn jìnbù le.",exEn:"His Chinese gradually improved."},
+{level:4,hanzi:"尽力",pinyin:"jìnlì",meaning:"to do one's best",ex:"我会尽力完成任务。",exPinyin:"Wǒ huì jìnlì wánchéng rènwù.",exEn:"I'll do my best to complete the task."},
+{level:4,hanzi:"批评",pinyin:"pīpíng",meaning:"to criticize",ex:"老师批评了他的作文。",exPinyin:"Lǎoshī pīpíngle tā de zuòwén.",exEn:"The teacher criticized his essay."},
+{level:4,hanzi:"鼓励",pinyin:"gǔlì",meaning:"to encourage",ex:"朋友一直在鼓励我。",exPinyin:"Péngyou yīzhí zài gǔlì wǒ.",exEn:"My friend has been encouraging me."},
+{level:4,hanzi:"挑战",pinyin:"tiǎozhàn",meaning:"challenge",ex:"这是一个很大的挑战。",exPinyin:"Zhè shì yí gè hěn dà de tiǎozhàn.",exEn:"This is a big challenge."},
+{level:4,hanzi:"独立",pinyin:"dúlì",meaning:"independent",ex:"年轻人要学会独立生活。",exPinyin:"Niánqīng rén yào xuéhuì dúlì shēnghuó.",exEn:"Young people must learn to live independently."},
+{level:4,hanzi:"复杂",pinyin:"fùzá",meaning:"complicated",ex:"这件事比较复杂。",exPinyin:"Zhè jiàn shì bǐjiào fùzá.",exEn:"This matter is rather complicated."},
+{level:4,hanzi:"严格",pinyin:"yángé",meaning:"strict",ex:"他的老师要求很严格。",exPinyin:"Tā de lǎoshī yāoqiú hěn yángé.",exEn:"His teacher is very strict."},
+{level:4,hanzi:"合适",pinyin:"héshì",meaning:"suitable; appropriate",ex:"这个工作很合适你。",exPinyin:"Zhège gōngzuò hěn héshì nǐ.",exEn:"This job is very suitable for you."},
+// HSK 5
+{level:5,hanzi:"抽象",pinyin:"chōuxiàng",meaning:"abstract",ex:"他的艺术作品比较抽象。",exPinyin:"Tā de yìshù zuòpǐn bǐjiào chōuxiàng.",exEn:"His artwork is quite abstract."},
+{level:5,hanzi:"具体",pinyin:"jùtǐ",meaning:"specific; concrete",ex:"你能说得具体一点吗？",exPinyin:"Nǐ néng shuō de jùtǐ yīdiǎn ma?",exEn:"Can you be more specific?"},
+{level:5,hanzi:"逻辑",pinyin:"luójí",meaning:"logic",ex:"这个论点缺乏逻辑。",exPinyin:"Zhège lùndiǎn quēfá luójí.",exEn:"This argument lacks logic."},
+{level:5,hanzi:"矛盾",pinyin:"máodùn",meaning:"contradiction",ex:"他的话前后矛盾。",exPinyin:"Tā de huà qiánhòu máodùn.",exEn:"His words are contradictory."},
+{level:5,hanzi:"客观",pinyin:"kèguān",meaning:"objective",ex:"要客观地看待这件事。",exPinyin:"Yào kèguān de kàndài zhè jiàn shì.",exEn:"You should look at this matter objectively."},
+{level:5,hanzi:"主观",pinyin:"zhǔguān",meaning:"subjective",ex:"这只是我个人的主观看法。",exPinyin:"Zhè zhǐshì wǒ gèrén de zhǔguān kànfǎ.",exEn:"This is just my personal subjective view."},
+{level:5,hanzi:"前提",pinyin:"qiántí",meaning:"prerequisite; premise",ex:"这是合作的基本前提。",exPinyin:"Zhè shì hézuò de jīběn qiántí.",exEn:"This is the basic prerequisite for cooperation."},
+{level:5,hanzi:"趋势",pinyin:"qūshì",meaning:"trend",ex:"这是大势所趋。",exPinyin:"Zhè shì dàshì suǒ qū.",exEn:"This is the general trend."},
+{level:5,hanzi:"规律",pinyin:"guīlǜ",meaning:"rule; law (of nature)",ex:"要养成规律的作息习惯。",exPinyin:"Yào yǎngchéng guīlǜ de zuòxī xíguàn.",exEn:"You should develop regular sleep habits."},
+{level:5,hanzi:"本质",pinyin:"běnzhì",meaning:"essence; nature",ex:"我们要看清事物的本质。",exPinyin:"Wǒmen yào kàn qīng shìwù de běnzhì.",exEn:"We must see the essence of things clearly."},
+{level:5,hanzi:"现象",pinyin:"xiànxiàng",meaning:"phenomenon",ex:"这种现象越来越普遍。",exPinyin:"Zhè zhǒng xiànxiàng yuèláiyuè pǔbiàn.",exEn:"This phenomenon is becoming more common."},
+{level:5,hanzi:"手段",pinyin:"shǒuduàn",meaning:"means; method",ex:"这是一种有效的手段。",exPinyin:"Zhè shì yī zhǒng yǒuxiào de shǒuduàn.",exEn:"This is an effective method."},
+{level:5,hanzi:"体现",pinyin:"tǐxiàn",meaning:"to reflect; embody",ex:"这体现了他的能力。",exPinyin:"Zhè tǐxiànle tā de nénglì.",exEn:"This reflects his ability."},
+{level:5,hanzi:"承担",pinyin:"chéngdān",meaning:"to bear; take on",ex:"他愿意承担责任。",exPinyin:"Tā yuànyì chéngdān zérèn.",exEn:"He's willing to bear responsibility."},
+{level:5,hanzi:"执行",pinyin:"zhíxíng",meaning:"to carry out; execute",ex:"我们要认真执行计划。",exPinyin:"Wǒmen yào rènzhēn zhíxíng jìhuà.",exEn:"We must carry out the plan seriously."},
+{level:5,hanzi:"推动",pinyin:"tuīdòng",meaning:"to push forward; drive",ex:"技术推动了社会进步。",exPinyin:"Jìshù tuīdòngle shèhuì jìnbù.",exEn:"Technology drives social progress."},
+{level:5,hanzi:"引起",pinyin:"yǐnqǐ",meaning:"to cause; arouse",ex:"这件事引起了广泛关注。",exPinyin:"Zhè jiàn shì yǐnqǐle guǎngfàn guānzhù.",exEn:"This matter aroused widespread attention."},
+{level:5,hanzi:"保障",pinyin:"bǎozhàng",meaning:"to guarantee; safeguard",ex:"法律保障公民的权利。",exPinyin:"Fǎlǜ bǎozhàng gōngmín de quánlì.",exEn:"Law safeguards citizens' rights."},
+{level:5,hanzi:"强调",pinyin:"qiángdiào",meaning:"to emphasize",ex:"老师强调了复习的重要性。",exPinyin:"Lǎoshī qiángdiàole fùxí de zhòngyàoxìng.",exEn:"The teacher emphasized the importance of review."},
+{level:5,hanzi:"对比",pinyin:"duìbǐ",meaning:"to contrast; compare",ex:"对比一下两者的优缺点。",exPinyin:"Duìbǐ yīxià liǎngzhě de yōuquēdiǎn.",exEn:"Compare the pros and cons of both."},
+{level:5,hanzi:"调整",pinyin:"tiáozhěng",meaning:"to adjust",ex:"我需要调整我的计划。",exPinyin:"Wǒ xūyào tiáozhěng wǒ de jìhuà.",exEn:"I need to adjust my plan."},
+{level:5,hanzi:"促使",pinyin:"cùshǐ",meaning:"to prompt; cause",ex:"这件事促使我重新思考。",exPinyin:"Zhè jiàn shì cùshǐ wǒ chóngxīn sīkǎo.",exEn:"This prompted me to rethink."},
+{level:5,hanzi:"判断",pinyin:"pànduàn",meaning:"to judge; judgment",ex:"很难判断谁对谁错。",exPinyin:"Hěn nán pànduàn shuí duì shuí cuò.",exEn:"It's hard to judge who is right or wrong."},
+{level:5,hanzi:"争议",pinyin:"zhēngyì",meaning:"controversy; dispute",ex:"这个话题一直存在争议。",exPinyin:"Zhège huàtí yīzhí cúnzài zhēngyì.",exEn:"This topic has always been controversial."},
+{level:5,hanzi:"衡量",pinyin:"héngliáng",meaning:"to measure; weigh",ex:"很难用金钱衡量价值。",exPinyin:"Hěn nán yòng jīnqián héngliáng jiàzhí.",exEn:"It's hard to measure value with money."},
+{level:5,hanzi:"揭示",pinyin:"jiēshì",meaning:"to reveal; uncover",ex:"这项研究揭示了重要规律。",exPinyin:"Zhè xiàng yánjiū jiēshìle zhòngyào guīlǜ.",exEn:"This research revealed important patterns."},
+{level:5,hanzi:"干预",pinyin:"gānyù",meaning:"to interfere; intervene",ex:"政府干预了市场价格。",exPinyin:"Zhèngfǔ gānyùle shìchǎng jiàgé.",exEn:"The government intervened in market prices."},
+{level:5,hanzi:"缺乏",pinyin:"quēfá",meaning:"to lack",ex:"他缺乏实际工作经验。",exPinyin:"Tā quēfá shíjì gōngzuò jīngyàn.",exEn:"He lacks practical work experience."},
+{level:5,hanzi:"弥补",pinyin:"míbǔ",meaning:"to make up for",ex:"努力可以弥补天赋不足。",exPinyin:"Nǔlì kěyǐ míbǔ tiānfù bùzú.",exEn:"Effort can make up for lack of talent."},
+{level:5,hanzi:"超越",pinyin:"chāoyuè",meaning:"to surpass; transcend",ex:"他的表现超越了所有人的预期。",exPinyin:"Tā de biǎoxiàn chāoyuèle suǒyǒu rén de yùqī.",exEn:"His performance surpassed everyone's expectations."},
+// HSK 6
+{level:6,hanzi:"辩证",pinyin:"biànzhèng",meaning:"dialectical",ex:"要用辩证的思维看问题。",exPinyin:"Yào yòng biànzhèng de sīwéi kàn wèntí.",exEn:"One must look at problems dialectically."},
+{level:6,hanzi:"诠释",pinyin:"quánshì",meaning:"to interpret; elucidate",ex:"他用行动诠释了责任的含义。",exPinyin:"Tā yòng xíngdòng quánshìle zérèn de hányì.",exEn:"He interpreted the meaning of responsibility through action."},
+{level:6,hanzi:"折射",pinyin:"zhéshè",meaning:"to refract; reflect (fig.)",ex:"这部小说折射了社会现实。",exPinyin:"Zhè bù xiǎoshuō zhéshèle shèhuì xiànshí.",exEn:"This novel reflects social reality."},
+{level:6,hanzi:"渗透",pinyin:"shèntòu",meaning:"to permeate; infiltrate",ex:"商业元素渗透到了文化领域。",exPinyin:"Shāngyè yuánsù shèntòudàole wénhuà lǐngyù.",exEn:"Commercial elements have permeated the cultural sphere."},
+{level:6,hanzi:"凸显",pinyin:"tūxiǎn",meaning:"to highlight; make prominent",ex:"这件事凸显了制度的漏洞。",exPinyin:"Zhè jiàn shì tūxiǎnle zhìdù de lòudòng.",exEn:"This incident highlighted the flaws in the system."},
+{level:6,hanzi:"蕴含",pinyin:"yùnhán",meaning:"to contain; embody",ex:"这首诗蕴含着深刻的哲理。",exPinyin:"Zhè shǒu shī yùnhánzhe shēnkè de zhélǐ.",exEn:"This poem contains profound philosophical meaning."},
+{level:6,hanzi:"制约",pinyin:"zhìyuē",meaning:"to restrict; constrain",ex:"资金不足制约了项目进展。",exPinyin:"Zījīn bùzú zhìyuēle xiàngmù jìnzhǎn.",exEn:"Insufficient funds constrained project progress."},
+{level:6,hanzi:"契机",pinyin:"qìjī",meaning:"opportunity; turning point",ex:"这次危机也是一个契机。",exPinyin:"Zhè cì wēijī yěshì yīgè qìjī.",exEn:"This crisis is also an opportunity."},
+{level:6,hanzi:"拓展",pinyin:"tuòzhǎn",meaning:"to expand; broaden",ex:"公司计划拓展海外市场。",exPinyin:"Gōngsī jìhuà tuòzhǎn hǎiwài shìchǎng.",exEn:"The company plans to expand into overseas markets."},
+{level:6,hanzi:"彰显",pinyin:"zhāngxiǎn",meaning:"to demonstrate; manifest",ex:"这彰显了她的领导才能。",exPinyin:"Zhè zhāngxiǎnle tā de lǐngdǎo cáinéng.",exEn:"This demonstrates her leadership ability."},
+{level:6,hanzi:"孕育",pinyin:"yùnyù",meaning:"to breed; nurture",ex:"这片土地孕育了灿烂的文明。",exPinyin:"Zhè piàn tǔdì yùnyùle cànlàn de wénmíng.",exEn:"This land nurtured a brilliant civilization."},
+{level:6,hanzi:"演变",pinyin:"yǎnbiàn",meaning:"to evolve; transform",ex:"语言随时代不断演变。",exPinyin:"Yǔyán suí shídài bùduàn yǎnbiàn.",exEn:"Language evolves continuously with the times."},
+{level:6,hanzi:"沉淀",pinyin:"chéndiàn",meaning:"sediment; to accumulate (fig.)",ex:"岁月的沉淀让他更加成熟。",exPinyin:"Suìyuè de chéndiàn ràng tā gèngjiā chéngshú.",exEn:"The passage of time has made him more mature."},
+{level:6,hanzi:"激发",pinyin:"jīfā",meaning:"to stimulate; spark",ex:"好奇心能激发创造力。",exPinyin:"Hàoqíxīn néng jīfā chuàngzàolì.",exEn:"Curiosity can spark creativity."},
+{level:6,hanzi:"斟酌",pinyin:"zhēnzhuó",meaning:"to deliberate; weigh carefully",ex:"这句话要好好斟酌一下。",exPinyin:"Zhè jù huà yào hǎohǎo zhēnzhuó yīxià.",exEn:"This sentence needs to be carefully considered."},
+{level:6,hanzi:"兼顾",pinyin:"jiāngù",meaning:"to attend to both; balance",ex:"他努力兼顾工作和家庭。",exPinyin:"Tā nǔlì jiāngù gōngzuò hé jiātíng.",exEn:"He works hard to balance work and family."},
+{level:6,hanzi:"归根结底",pinyin:"guī gēn jié dǐ",meaning:"ultimately; at root",ex:"归根结底，问题在于沟通。",exPinyin:"Guī gēn jié dǐ, wèntí zàiyú gōutōng.",exEn:"Ultimately, the problem lies in communication."},
+{level:6,hanzi:"举足轻重",pinyin:"jǔ zú qīng zhòng",meaning:"to play a decisive role",ex:"他在公司里举足轻重。",exPinyin:"Tā zài gōngsī lǐ jǔ zú qīng zhòng.",exEn:"He plays a decisive role in the company."},
+{level:6,hanzi:"不言而喻",pinyin:"bù yán ér yù",meaning:"to go without saying",ex:"他的贡献不言而喻。",exPinyin:"Tā de gòngxiàn bù yán ér yù.",exEn:"His contribution goes without saying."},
+{level:6,hanzi:"循序渐进",pinyin:"xún xù jiàn jìn",meaning:"step by step; gradually",ex:"学语言要循序渐进。",exPinyin:"Xué yǔyán yào xún xù jiàn jìn.",exEn:"Learning a language should be done step by step."},
+{level:6,hanzi:"精益求精",pinyin:"jīng yì qiú jīng",meaning:"to keep improving",ex:"工匠精神就是精益求精。",exPinyin:"Gōngjiàng jīngshén jiùshì jīng yì qiú jīng.",exEn:"Craftsmanship means always striving for excellence."},
+{level:6,hanzi:"举一反三",pinyin:"jǔ yī fǎn sān",meaning:"to learn from one example",ex:"好学生能举一反三。",exPinyin:"Hǎo xuésheng néng jǔ yī fǎn sān.",exEn:"A good student can learn from one example and apply it broadly."},
+{level:6,hanzi:"根深蒂固",pinyin:"gēn shēn dì gù",meaning:"deep-rooted",ex:"这种观念根深蒂固。",exPinyin:"Zhè zhǒng guānniàn gēn shēn dì gù.",exEn:"This idea is deep-rooted."},
+{level:6,hanzi:"可见一斑",pinyin:"kě jiàn yī bān",meaning:"evident; discernible",ex:"由此可见一斑。",exPinyin:"Yóucǐ kě jiàn yī bān.",exEn:"This gives a glimpse of the whole picture."},
+{level:6,hanzi:"与其…不如",pinyin:"yǔqí…bùrú",meaning:"rather than…better to",ex:"与其抱怨，不如行动。",exPinyin:"Yǔqí bàoyuàn, bùrú xíngdòng.",exEn:"Rather than complaining, it's better to take action."},
+{level:6,hanzi:"潜移默化",pinyin:"qián yí mò huà",meaning:"imperceptible influence",ex:"文化对人有潜移默化的影响。",exPinyin:"Wénhuà duì rén yǒu qián yí mò huà de yǐngxiǎng.",exEn:"Culture has an imperceptible influence on people."},
+{level:6,hanzi:"一如既往",pinyin:"yī rú jì wǎng",meaning:"as always; as before",ex:"他一如既往地努力工作。",exPinyin:"Tā yī rú jì wǎng de nǔlì gōngzuò.",exEn:"He works as hard as always."},
+{level:6,hanzi:"不谋而合",pinyin:"bù móu ér hé",meaning:"to coincide without prior consultation",ex:"我们的想法不谋而合。",exPinyin:"Wǒmen de xiǎngfǎ bù móu ér hé.",exEn:"Our ideas coincided without prior discussion."},
+{level:6,hanzi:"恰到好处",pinyin:"qià dào hǎo chù",meaning:"just right",ex:"他的回答恰到好处。",exPinyin:"Tā de huídá qià dào hǎo chù.",exEn:"His answer was just right."},
+{level:6,hanzi:"司空见惯",pinyin:"sī kōng jiàn guàn",meaning:"a common occurrence",ex:"堵车在这里司空见惯。",exPinyin:"Dǔchē zài zhèlǐ sī kōng jiàn guàn.",exEn:"Traffic jams are a common occurrence here."}
+];
+
+// State
+let deck = [...VOCAB];
+let filtered = [...VOCAB];
+let current = 0;
+let isFlipped = false;
+let known = new Set();
+let activeLevel = 0;
+let searchQ = "";
+let sortMode = "level"; // "level" or "alpha"
+
+function applyFilters() {
+  filtered = VOCAB.filter(v => {
+    const matchLevel = activeLevel === 0 || v.level === activeLevel;
+    const q = searchQ.toLowerCase();
+    const matchSearch = !q || v.hanzi.includes(q) || v.pinyin.toLowerCase().includes(q) || v.meaning.toLowerCase().includes(q);
+    return matchLevel && matchSearch;
+  });
+  if (sortMode === "alpha") filtered.sort((a,b) => a.hanzi.localeCompare(b.hanzi, "zh"));
+  else filtered.sort((a,b) => a.level - b.level);
+  deck = [...filtered];
+  current = 0;
+  isFlipped = false;
+  document.getElementById("theCard").classList.remove("flipped");
+  document.getElementById("gradeButtons").style.visibility = "hidden";
+  renderCard();
+  renderGrid();
+  updateStats();
+}
+
+function renderCard() {
+  if (deck.length === 0) {
+    document.getElementById("frontHanzi").textContent = "—";
+    document.getElementById("frontPinyin").textContent = "No cards";
+    document.getElementById("frontBadge").textContent = "—";
+    document.getElementById("cardCounter").textContent = "0 of 0";
+    return;
+  }
+  const v = deck[current];
+  document.getElementById("frontHanzi").textContent = v.hanzi;
+  document.getElementById("frontPinyin").textContent = v.pinyin;
+  document.getElementById("frontBadge").textContent = "HSK" + v.level;
+  document.getElementById("backHanzi").textContent = v.hanzi;
+  document.getElementById("backPinyin").textContent = v.pinyin;
+  document.getElementById("backMeaning").textContent = v.meaning;
+  document.getElementById("exHanzi").textContent = v.ex;
+  document.getElementById("exPinyin").textContent = v.exPinyin;
+  document.getElementById("exEn").textContent = v.exEn;
+  document.getElementById("cardCounter").textContent = `Card ${current + 1} of ${deck.length}`;
+  document.getElementById("btnPrev").disabled = current === 0;
+  document.getElementById("btnNext").disabled = current === deck.length - 1;
+  updateProgress();
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById("theCard").classList.toggle("flipped", isFlipped);
+  document.getElementById("gradeButtons").style.visibility = isFlipped ? "visible" : "hidden";
+}
+
+function nextCard() {
+  if (current < deck.length - 1) {
+    current++;
+    isFlipped = false;
+    document.getElementById("theCard").classList.remove("flipped");
+    document.getElementById("gradeButtons").style.visibility = "hidden";
+    renderCard();
+  }
+}
+
+function prevCard() {
+  if (current > 0) {
+    current--;
+    isFlipped = false;
+    document.getElementById("theCard").classList.remove("flipped");
+    document.getElementById("gradeButtons").style.visibility = "hidden";
+    renderCard();
+  }
+}
+
+function gradeCard(gotIt) {
+  const v = deck[current];
+  if (gotIt) known.add(v.hanzi); else known.delete(v.hanzi);
+  renderGrid();
+  updateStats();
+  if (current < deck.length - 1) setTimeout(nextCard, 280);
+}
+
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  current = 0;
+  isFlipped = false;
+  document.getElementById("theCard").classList.remove("flipped");
+  document.getElementById("gradeButtons").style.visibility = "hidden";
+  renderCard();
+}
+
+function resetProgress() {
+  known.clear();
+  deck = [...filtered];
+  current = 0;
+  isFlipped = false;
+  document.getElementById("theCard").classList.remove("flipped");
+  document.getElementById("gradeButtons").style.visibility = "hidden";
+  renderCard();
+  renderGrid();
+  updateStats();
+}
+
+function updateProgress() {
+  const pct = deck.length ? Math.round((current / deck.length) * 100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = `${current + 1} / ${deck.length}`;
+}
+
+function updateStats() {
+  document.getElementById("statKnown").textContent = known.size;
+  document.getElementById("statLeft").textContent = filtered.length - known.size;
+  document.getElementById("statTotal").textContent = filtered.length;
+}
+
+function renderGrid() {
+  const grid = document.getElementById("cardGrid");
+  const nr = document.getElementById("noResults");
+  if (filtered.length === 0) {
+    grid.innerHTML = "";
+    nr.style.display = "block";
+    return;
+  }
+  nr.style.display = "none";
+  grid.innerHTML = filtered.map((v, i) => {
+    const cls = known.has(v.hanzi) ? "known" : "";
+    return `<div class="mini-card ${cls}" onclick="jumpTo(${i})">
+      <div class="mini-lvl">HSK${v.level}</div>
+      <div class="mini-hanzi">${v.hanzi}</div>
+      <div class="mini-pinyin">${v.pinyin}</div>
+      <div class="mini-meaning">${v.meaning}</div>
+    </div>`;
+  }).join("");
+}
+
+function jumpTo(idx) {
+  current = idx;
+  isFlipped = false;
+  document.getElementById("theCard").classList.remove("flipped");
+  document.getElementById("gradeButtons").style.visibility = "hidden";
+  renderCard();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function toggleSort() {
+  sortMode = sortMode === "level" ? "alpha" : "level";
+  document.getElementById("sortLabel").textContent = sortMode;
+  applyFilters();
+}
+
+// Level buttons
+document.querySelectorAll(".lvl-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".lvl-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeLevel = parseInt(btn.dataset.level);
+    applyFilters();
+  });
+});
+
+// Search
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQ = e.target.value;
+  applyFilters();
+});
+
+// Keyboard
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowRight" || e.key === "l") nextCard();
+  if (e.key === "ArrowLeft" || e.key === "h") prevCard();
+  if (e.key === " " || e.key === "f") { e.preventDefault(); flipCard(); }
+  if (e.key === "y" && isFlipped) gradeCard(true);
+  if (e.key === "n" && isFlipped) gradeCard(false);
+});
+
+// Example sentence font size
+let exScale = 1;
+const EX_STEPS = [0.75, 0.88, 1, 1.2, 1.45, 1.75];
+let exStep = 2; // default = index 2 = 1×
+
+function changeExSize(dir) {
+  exStep = Math.max(0, Math.min(EX_STEPS.length - 1, exStep + dir));
+  exScale = EX_STEPS[exStep];
+  document.getElementById("exampleBlock").style.setProperty("--ex-scale", exScale);
+}
+
+// Grid visibility toggle
+let gridVisible = true;
+function toggleGridVisibility() {
+  gridVisible = !gridVisible;
+  document.getElementById("cardGrid").classList.toggle("hidden", !gridVisible);
+  document.getElementById("noResults").classList.toggle("hidden", !gridVisible);
+  document.getElementById("gridToggleBtn").textContent = gridVisible ? "All cards ▾" : "All cards ▸";
+}
+
+// Init
+applyFilters();
+</script>
+</body>
+</html>
